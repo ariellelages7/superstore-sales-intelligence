@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Superstore Sales Intelligence — Executive Report</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green:  #1D9E75; --blue:   #378ADD; --amber:  #EF9F27;
+    --coral:  #D85A30; --purple: #7F77DD; --gray:   #888780;
+    --bg:     #fafaf8; --surface: #ffffff; --surface2: #f4f3ef;
+    --text:   #1a1a18; --text2:  #555550; --text3:  #888880;
+    --border: rgba(0,0,0,.08);
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  .page { max-width: 960px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+
+  /* Cover */
+  .cover { border-left: 4px solid var(--green); padding: 0 0 2.5rem 2rem; margin-bottom: 3rem; }
+  .cover-eyebrow { font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--green); font-weight: 500; margin-bottom: .6rem; }
+  .cover-title { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 700; line-height: 1.1; margin-bottom: .5rem; }
+  .cover-sub { font-size: 15px; color: var(--text2); font-weight: 300; }
+
+  /* Section headers */
+  .section { margin-bottom: 3rem; }
+  .section-label { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--text3); margin-bottom: 1.25rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+
+  /* KPI grid */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2.5rem; }
+  .kpi { background: var(--surface2); border-radius: 10px; padding: 1.1rem 1.25rem; }
+  .kpi-label { font-size: 11px; color: var(--text3); margin-bottom: .3rem; letter-spacing: .04em; }
+  .kpi-val { font-size: 26px; font-weight: 500; line-height: 1.1; }
+  .kpi-sub { font-size: 11px; color: var(--text2); margin-top: .3rem; }
+  .pos { color: var(--green); } .neg { color: var(--coral); }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem 1.5rem; }
+  .card-title { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 1rem; letter-spacing: .02em; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+
+  /* Chart containers */
+  .chart-wrap { position: relative; width: 100%; }
+
+  /* Segment cards */
+  .seg-card { border-top: 3px solid; }
+  .seg-card .seg-val { font-size: 26px; font-weight: 500; margin: .2rem 0 .5rem; }
+  .seg-card .seg-pct { font-size: 12px; color: var(--text2); margin-bottom: .75rem; }
+  .seg-card .seg-meta { font-size: 11px; color: var(--text3); line-height: 1.8; }
+
+  /* RFM */
+  .rfm-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .rfm-pill { border-radius: 10px; padding: .85rem; text-align: center; }
+  .rfm-pill .rl { font-size: 10px; font-weight: 600; margin-bottom: .3rem; letter-spacing: .04em; text-transform: uppercase; }
+  .rfm-pill .rn { font-size: 22px; font-weight: 500; margin-bottom: .15rem; }
+  .rfm-pill .rv { font-size: 11px; }
+
+  /* Horizontal bars */
+  .hbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+  .hbar-name { font-size: 11px; color: var(--text2); width: 95px; flex-shrink: 0; text-align: right; }
+  .hbar-track { flex: 1; height: 9px; background: var(--surface2); border-radius: 5px; overflow: hidden; }
+  .hbar-fill { height: 100%; border-radius: 5px; }
+  .hbar-val { font-size: 11px; color: var(--text2); width: 60px; flex-shrink: 0; }
+
+  /* Insight boxes */
+  .insight { border-left: 3px solid var(--green); background: var(--surface2); border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; margin-bottom: .85rem; }
+  .insight h4 { font-size: 13px; font-weight: 500; margin-bottom: .3rem; }
+  .insight p { font-size: 13px; color: var(--text2); line-height: 1.65; }
+
+  /* Legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 10px; font-size: 11px; color: var(--text2); }
+  .leg-sq { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+  /* Footer */
+  .footer { font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 3rem; line-height: 2; }
+
+  @media print {
+    body { background: white; }
+    .page { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <div class="cover-eyebrow">Executive Report · Retail Analytics</div>
+    <div class="cover-title">Superstore Sales Intelligence<br>2015 – 2018</div>
+    <div class="cover-sub">Revenue performance &nbsp;·&nbsp; Customer segmentation &nbsp;·&nbsp; RFM analysis &nbsp;·&nbsp; Strategic recommendations</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="section">
+    <div class="section-label">Business overview</div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Total revenue</div><div class="kpi-val">$2.42M</div><div class="kpi-sub">4-year cumulative</div></div>
+      <div class="kpi"><div class="kpi-label">Total orders</div><div class="kpi-val">4,922</div><div class="kpi-sub">Unique order IDs</div></div>
+      <div class="kpi"><div class="kpi-label">Customer base</div><div class="kpi-val">793</div><div class="kpi-sub">Unique buyers</div></div>
+      <div class="kpi"><div class="kpi-label">Revenue CAGR</div><div class="kpi-val pos">+15.5%</div><div class="kpi-sub">2015 → 2018</div></div>
+    </div>
+  </div>
+
+  <!-- Revenue trend -->
+  <div class="section">
+    <div class="section-label">Revenue trend — monthly 2015–2018</div>
+    <div class="chart-wrap" style="height:210px"><canvas id="trendChart" role="img" aria-label="Monthly revenue line chart 2015-2018"></canvas></div>
+  </div>
+
+  <!-- Annual + AOV -->
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Annual revenue & YoY growth</div>
+      <div class="legend">
+        <span><span class="leg-sq" style="background:#1D9E75"></span>Revenue</span>
+        <span><span class="leg-sq" style="background:#EF9F27"></span>YoY %</span>
+      </div>
+      <div class="chart-wrap" style="height:190px"><canvas id="yearChart" role="img" aria-label="Annual revenue bars 2015-2018"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Average order value — declining trend</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="aovChart" role="img" aria-label="AOV trend 2015-2018"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Segments -->
+  <div class="section">
+    <div class="section-label">Customer segments</div>
+    <div class="row3">
+      <div class="card seg-card" style="border-top-color:#1D9E75">
+        <div class="card-title">Consumer</div>
+        <div class="seg-val">$1.24M</div>
+        <div class="seg-pct">51.1% of revenue</div>
+        <div class="seg-meta">409 customers · 2,537 orders<br>AOV $488 · Largest segment</div>
+      </div>
+      <div class="card seg-card" style="border-top-color:#378ADD">
+        <div class="card-title">Corporate</div>
+        <div class="seg-val">$745K</div>
+        <div class="seg-pct">30.7% of revenue</div>
+        <div class="seg-meta">236 customers · 1,491 orders<br>AOV $500 · Highest ticket</div>
+      </div>
+      <div class="card seg-card" style="border-top-color:#EF9F27">
+        <div class="card-title">Home Office</div>
+        <div class="seg-val">$439K</div>
+        <div class="seg-pct">18.1% of revenue</div>
+        <div class="seg-meta">148 customers · 894 orders<br>AOV $491 · Growth opportunity</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Revenue by category</div>
+      <div class="legend">
+        <span><span class="leg-sq" style="background:#1D9E75"></span>Furniture 36.5%</span>
+        <span><span class="leg-sq" style="background:#378ADD"></span>Technology 34.1%</span>
+        <span><span class="leg-sq" style="background:#EF9F27"></span>Office Supplies 29.3%</span>
+      </div>
+      <div class="chart-wrap" style="height:190px"><canvas id="catChart" role="img" aria-label="Donut: Furniture 36.5%, Technology 34.1%, Office Supplies 29.3%"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 10 sub-categories by revenue</div>
+      <div id="subcatBars" style="margin-top:.25rem"></div>
+    </div>
+  </div>
+
+  <!-- RFM -->
+  <div class="section">
+    <div class="section-label">RFM customer segmentation</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1.25rem;line-height:1.65">Customers scored on Recency, Frequency and Monetary value (quantile bins 1–4). Scores summed to 3–12 and mapped to five business segments.</p>
+    <div class="rfm-row">
+      <div class="rfm-pill" style="background:#E1F5EE"><div class="rl" style="color:#085041">Champions</div><div class="rn" style="color:#0F6E56">197</div><div class="rv" style="color:#1D9E75">$1.00M</div></div>
+      <div class="rfm-pill" style="background:#E6F1FB"><div class="rl" style="color:#042C53">Loyal</div><div class="rn" style="color:#185FA5">216</div><div class="rv" style="color:#378ADD">$831K</div></div>
+      <div class="rfm-pill" style="background:#EEEDFE"><div class="rl" style="color:#26215C">Potential</div><div class="rn" style="color:#534AB7">186</div><div class="rv" style="color:#7F77DD">$407K</div></div>
+      <div class="rfm-pill" style="background:#FAEEDA"><div class="rl" style="color:#412402">At Risk</div><div class="rn" style="color:#854F0B">139</div><div class="rv" style="color:#BA7517">$157K</div></div>
+      <div class="rfm-pill" style="background:#FCEBEB"><div class="rl" style="color:#501313">Lost</div><div class="rn" style="color:#A32D2D">55</div><div class="rv" style="color:#E24B4A">$25K</div></div>
+    </div>
+    <div class="chart-wrap" style="height:180px"><canvas id="rfmChart" role="img" aria-label="RFM segment revenue bar chart"></canvas></div>
+  </div>
+
+  <!-- Regions -->
+  <div class="section">
+    <div class="section-label">Regional performance</div>
+    <div id="regionBars"></div>
+  </div>
+
+  <!-- Fulfillment -->
+  <div class="section">
+    <div class="section-label">Fulfillment — avg lead time by ship mode</div>
+    <div class="row3" style="grid-template-columns:repeat(4,1fr)">
+      <div class="kpi"><div class="kpi-label">Same Day</div><div class="kpi-val">0 days</div></div>
+      <div class="kpi"><div class="kpi-label">First Class</div><div class="kpi-val">2.2 days</div></div>
+      <div class="kpi"><div class="kpi-label">Second Class</div><div class="kpi-val">3.2 days</div></div>
+      <div class="kpi"><div class="kpi-label">Standard Class</div><div class="kpi-val">5.0 days</div></div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="section">
+    <div class="section-label">Key insights & strategic recommendations</div>
+    <div class="insight">
+      <h4>Revenue growing but AOV declining — volume masking a pricing problem</h4>
+      <p>Revenue grew 54% from 2015 to 2018, but AOV fell from $521 to $458 (−12%). The business scales by order volume, not ticket size. Recommendation: product bundles, upsell flows at checkout, and minimum-order incentives targeting the Corporate segment.</p>
+    </div>
+    <div class="insight" style="border-left-color:#378ADD">
+      <h4>Champions (197 customers) drive 41% of total revenue</h4>
+      <p>The top RFM tier generates $1M from just 25% of the base. A structured loyalty program for this cohort protects a disproportionate share of revenue. Meanwhile, the 186 "Potential" customers ($407K) are primed for conversion — highest-leverage re-engagement target.</p>
+    </div>
+    <div class="insight" style="border-left-color:#EF9F27">
+      <h4>Strong Q3/Q4 seasonality — Q1/Q2 demand consistently under-served</h4>
+      <p>Revenue spikes in September and November across all four years while January–February underperform by 60–70%. Recommendation: fiscal year-start Corporate campaigns and loyalty rewards redeemable in Q1 to smooth the revenue curve and reduce cash-flow risk.</p>
+    </div>
+    <div class="insight" style="border-left-color:#D85A30">
+      <h4>South region generates only 17% of revenue — opportunity or structural gap?</h4>
+      <p>West ($732K) and East ($670K) dominate while South lags at $415K. Before investing in expansion, a region-specific cohort analysis and competitive audit are needed to determine whether the gap is driven by distribution coverage, product mix, pricing, or demand.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    Analysis by: [Your Name] &nbsp;·&nbsp; Dataset: Superstore Retail Transactions 2015–2018 &nbsp;·&nbsp; 9,800 rows &nbsp;·&nbsp; 793 customers &nbsp;·&nbsp; 4,922 orders<br>
+    Methods: RFM scoring (quantile-based), YoY growth, cohort AOV, lead-time distribution &nbsp;·&nbsp; Tools: Python · pandas · matplotlib
+  </div>
+
+</div>
+
+<script>
+const G='#1D9E75',B='#378ADD',A='#EF9F27',C='#D85A30',P='#7F77DD';
+const tc='#888',gc='rgba(0,0,0,.06)';
+const fmt = v => '$'+Math.round(v).toLocaleString();
+
+const months=["Jan\n'15","","Mar","","May","","Jul","","Sep","","Nov","","Jan\n'16","","Mar","","May","","Jul","","Sep","","Nov","","Jan\n'17","","Mar","","May","","Jul","","Sep","","Nov","","Jan\n'18","","Mar","","May","","Jul","","Sep","","Nov",""];
+const rev=[14206,4520,56057,27907,23644,36061,33782,28684,85203,32351,81273,70462,30239,11951,43391,35878,34549,24582,28608,40141,63134,39630,86370,79335,18542,22979,51165,38680,56657,40560,38321,37010,103194,59583,87676,95739,43476,20723,61267,43110,51279,60586,44825,62838,86153,80404,122742,83740];
+
+new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:months,datasets:[{data:rev,borderColor:G,backgroundColor:G+'22',borderWidth:1.5,fill:true,tension:.35,pointRadius:0,pointHoverRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>fmt(v.raw)}}},scales:{x:{ticks:{color:tc,font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:12},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'$'+Math.round(v/1000)+'K'},grid:{color:gc}}}}});
+
+new Chart(document.getElementById('yearChart'),{type:'bar',data:{labels:['2015','2016','2017','2018'],datasets:[{data:[494149,517809,650107,761142],backgroundColor:[G+'88',G+'88',G+'bb',G],borderRadius:5,yAxisID:'y'},{type:'line',data:[null,4.8,25.5,17.1],borderColor:A,backgroundColor:'transparent',borderWidth:2,pointRadius:5,pointBackgroundColor:A,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?fmt(ctx.raw):ctx.raw+'%'}}},scales:{x:{ticks:{color:tc,font:{size:11}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'$'+Math.round(v/1000)+'K'},grid:{color:gc}},y2:{position:'right',ticks:{color:A,font:{size:10},callback:v=>v+'%'},grid:{display:false}}}}});
+
+new Chart(document.getElementById('aovChart'),{type:'line',data:{labels:['2015','2016','2017','2018'],datasets:[{data:[521.80,508.15,502.01,458.24],borderColor:C,backgroundColor:C+'22',borderWidth:2.5,fill:true,tension:.3,pointRadius:6,pointBackgroundColor:C}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>'$'+v.raw.toFixed(2)}}},scales:{x:{ticks:{color:tc,font:{size:11}},grid:{display:false}},y:{min:420,max:550,ticks:{color:tc,font:{size:10},callback:v=>'$'+v},grid:{color:gc}}}}});
+
+new Chart(document.getElementById('catChart'),{type:'doughnut',data:{labels:['Furniture','Technology','Office Supplies'],datasets:[{data:[36.5,34.1,29.3],backgroundColor:[G,B,A],borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'64%',plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.label+': '+v.raw+'%'}}}}});
+
+const subcats=[['Phones',327782],['Chairs',322823],['Bookcases',244108],['Tables',228744],['Storage',219343],['Binders',205026],['Machines',189239],['Accessories',164187],['Copiers',146248],['Appliances',105062]];
+const maxS=subcats[0][1];
+const scEl=document.getElementById('subcatBars');
+subcats.forEach(([name,val])=>{
+  const pct=(val/maxS*100).toFixed(0);
+  scEl.innerHTML+=`<div class="hbar-row"><div class="hbar-name">${name}</div><div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;background:${B}99"></div></div><div class="hbar-val">$${Math.round(val/1000)}K</div></div>`;
+});
+
+new Chart(document.getElementById('rfmChart'),{type:'bar',data:{labels:['Champions','Loyal','Potential','At Risk','Lost'],datasets:[{data:[1003587,830960,406556,156698,25405],backgroundColor:[G,B,P,A,C],borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>fmt(v.raw)}}},scales:{x:{ticks:{color:tc,font:{size:10}},grid:{display:false}},y:{ticks:{color:tc,font:{size:10},callback:v=>'$'+Math.round(v/1000)+'K'},grid:{color:gc}}}}});
+
+const regions=[['West',731944,30.2,'#1D9E75'],['East',670370,27.7,'#378ADD'],['Central',605808,25.0,'#7F77DD'],['South',415085,17.1,'#EF9F27']];
+const maxR=regions[0][1];
+const rEl=document.getElementById('regionBars');
+regions.forEach(([name,val,pct,col])=>{
+  rEl.innerHTML+=`<div class="hbar-row"><div class="hbar-name" style="width:65px;font-size:12px">${name}</div><div class="hbar-track"><div class="hbar-fill" style="width:${(val/maxR*100).toFixed(0)}%;background:${col}"></div></div><div class="hbar-val">$${Math.round(val/1000)}K <span style="color:#aaa;font-size:10px">${pct}%</span></div></div>`;
+});
+</script>
+</body>
+</html>
